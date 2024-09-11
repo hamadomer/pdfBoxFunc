@@ -11,30 +11,53 @@ public class PDFHandler {
 
   public static void createPdfWithGivenSize(int size, String path) throws IOException {
 
-    PDDocument doc = new PDDocument();
-    PDPage page = new PDPage();
+      String userSystemName = System.getProperty("os.name");
 
-    // size is divided by 2.5 because the image used is 2.5 Mb
-    System.out.print("Creating PDF...");
-    for(int i = 0; i < (size / 2.5); i++) {
+      if (userSystemName.contains("Linux")) {
+          long sizeInBytes = size * 1024 * 1024L;
 
-        doc.addPage(page);
+        String[] command = {"bash", "-c", "fallocate -l " + sizeInBytes + " " + path};
 
-        PDImageXObject pdImage = PDImageXObject.createFromFile("src/main/resources/pdf/25.jpg", doc);
+        Process process = Runtime.getRuntime().exec(command);
 
-        PDPageContentStream contents = new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, false);
+        try {
+            int exitCode = process.waitFor();
 
-        contents.drawImage(pdImage, 70, 250);
-        contents.close();
+            if(exitCode == 0) {
+                System.out.println("PDF file created successfully at " + path + " with size " + size + " Mo");
+            }else {
+                System.out.println("Error creating PDF file, exit code: " + exitCode);
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
-        System.out.print(".");
-    }
+      } else {
+          PDDocument doc = new PDDocument();
+          PDPage page = new PDPage();
 
-    doc.save(path + "/output.pdf");
+          // size is divided by 2.5 because the image used is 2.5 Mb
+          System.out.print("Creating PDF...");
+          for (int i = 0; i < (size / 2.5); i++) {
 
-    doc.close();
+              doc.addPage(page);
 
-    System.out.println(" Done!");
-}
+              PDImageXObject pdImage = PDImageXObject.createFromFile("src/main/resources/pdf/25.jpg", doc);
+
+              PDPageContentStream contents = new PDPageContentStream(doc, page, PDPageContentStream.AppendMode.APPEND, false);
+
+              contents.drawImage(pdImage, 70, 250);
+              contents.close();
+
+              System.out.print(".");
+          }
+
+          doc.save(path);
+
+          doc.close();
+
+          System.out.println(" Done!");
+      }
+  }
 
 }
